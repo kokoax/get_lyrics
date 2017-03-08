@@ -85,7 +85,7 @@ defmodule GetLyrics do
       elem
         |> Floki.parse
         |> Floki.find(".lyricWork__body")
-        |> Enum.map(&(IO.inspect &1 |> getChild |> Enum.at(0)))
+        |> Enum.map(&(&1 |> getChild |> Enum.at(0)))
 # |> Enum.map(&(&1 |> Enum.at(0) |> getChild))
     else
       [nil,nil]

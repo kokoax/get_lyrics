@@ -37,6 +37,10 @@ defmodule GetLyrics do
       # htmlを取得
       %HTTPoison.Response{status_code: 200, body: body} = HTTPoison.get!(url)
 
+      # IO.inspect body |> getArtist
+      # IO.puts body |> getComposer
+      # IO.puts body |> getWriter
+      IO.inspect body |> getLyricsInfo
       # 歌詞サイト全体のhtmlを歌詞 |> 歌詞の部分のみのhtmlに |> 歌詞部分を整形してきれいに
       IO.puts body |> getLyricsBody |> getLyrics
     end
@@ -47,6 +51,45 @@ defmodule GetLyrics do
       |> Map.update(:title,    "", &(&1))
       |> Map.update(:artist,   "", &(&1))
       |> Map.update(:composer, "", &(&1))
+  end
+
+  defp getLyricsInfo(elem) do
+    info = %{}
+
+    [writer, composer] = getOtherData(elem)
+
+    info
+      |> Map.put(:artist, getArtist(elem))
+      |> Map.put(:writer,   writer)
+      |> Map.put(:composer, composer)
+  end
+
+  defp getArtist(elem) do
+    if Regex.match?(~r/.contentBox__titleSub/,elem) do
+    elem
+      |> Floki.parse
+      |> Floki.find(".contentBox__titleSub")
+      |> Floki.find("a")
+      |> Enum.at(0)
+      |> getChild
+      |> Enum.at(0)
+      |> removeHead
+      |> removeFoot
+    else
+      nil
+    end
+  end
+
+  defp getOtherData(elem) do
+    if Regex.match?(~r/.lyricWork__body/,elem) do
+      elem
+        |> Floki.parse
+        |> Floki.find(".lyricWork__body")
+        |> Enum.map(&(IO.inspect &1 |> getChild |> Enum.at(0)))
+# |> Enum.map(&(&1 |> Enum.at(0) |> getChild))
+    else
+      [nil,nil]
+    end
   end
 
   defp getSongsBody (elem) do
@@ -137,6 +180,10 @@ defmodule GetLyrics do
   end
 
   defp removeHead(elem) do elem end
+
+  defp removeFoot(elem) do
+    Regex.replace(~r/\s+$/, elem, "")
+  end
 
   # ルビが振ってある歌詞かどうか
   defp has_ruby?(elem) when is_tuple(elem) do

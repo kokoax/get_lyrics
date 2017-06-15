@@ -20,6 +20,7 @@ defmodule GetLyrics do
       switches: [title: :string, artist: :string, composer: :string, url: :string],
       aliases:  [t: :title, a: :artist, c: :composer, u: :url]
     )
+    IO.inspect options
     # オプションをMapに変換
     options = options |> Enum.into(%{}) |> setOptions
     IO.inspect options # 確認
@@ -53,8 +54,8 @@ defmodule GetLyrics do
   defp getLyricsInfo(elem) do
     [writer, composer] = getOtherData(elem)
     %{}
-      |> Map.put(:artist, getArtist(elem))
-      |> Map.put(:title, getTitle(elem))
+      |> Map.put(:artist,   getArtist(elem))
+      |> Map.put(:title,    getTitle(elem))
       |> Map.put(:writer,   writer)
       |> Map.put(:composer, composer)
   end

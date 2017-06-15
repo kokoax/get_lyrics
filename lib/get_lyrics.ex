@@ -20,6 +20,7 @@ defmodule GetLyrics do
       switches: [title: :string, artist: :string, composer: :string, url: :string],
       aliases:  [t: :title, a: :artist, c: :composer, u: :url]
     )
+    IO.inspect options
     # オプションをMapに変換
     options = options |> Enum.into(%{}) |> setOptions
     IO.inspect options # 確認
@@ -37,9 +38,6 @@ defmodule GetLyrics do
       # htmlを取得
       %HTTPoison.Response{status_code: 200, body: body} = HTTPoison.get!(url)
 
-      # IO.inspect body |> getArtist
-      # IO.puts body |> getComposer
-      # IO.puts body |> getWriter
       IO.inspect body |> getLyricsInfo
       # 歌詞サイト全体のhtmlを歌詞 |> 歌詞の部分のみのhtmlに |> 歌詞部分を整形してきれいに
       IO.puts body |> getLyricsBody |> getLyrics
@@ -54,14 +52,36 @@ defmodule GetLyrics do
   end
 
   defp getLyricsInfo(elem) do
-    info = %{}
-
     [writer, composer] = getOtherData(elem)
-
-    info
-      |> Map.put(:artist, getArtist(elem))
+    %{}
+      |> Map.put(:artist,   getArtist(elem))
+      |> Map.put(:title,    getTitle(elem))
       |> Map.put(:writer,   writer)
       |> Map.put(:composer, composer)
+  end
+
+  defp getGapTitle(elem) do
+    if Regex.match?(~r/newIcon|preIcon/,elem) do
+      1
+    else
+      0
+    end
+  end
+
+  defp getTitle(elem) do
+    if Regex.match?(~r/.contentBox__title/,elem) do
+      Regex.run(~r/「(.*)」/,
+        elem
+          |> Floki.parse
+          |> Floki.find(".contentBox__title")
+          |> Floki.find("h1")
+          |> Enum.at(0)
+          |> getChild
+          |> Enum.at(getGapTitle(elem))
+      ) |> Enum.at(1)
+    else
+      nil
+    end
   end
 
   defp getArtist(elem) do
@@ -86,7 +106,6 @@ defmodule GetLyrics do
         |> Floki.parse
         |> Floki.find(".lyricWork__body")
         |> Enum.map(&(&1 |> getChild |> Enum.at(0)))
-# |> Enum.map(&(&1 |> Enum.at(0) |> getChild))
     else
       [nil,nil]
     end
